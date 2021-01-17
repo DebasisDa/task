@@ -1,0 +1,1 @@
+mongodb start ::: sudo systemctl status mongodb
