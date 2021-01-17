@@ -12,7 +12,7 @@ const UserSchema  = new mongoose.Schema({
       enum : ['superadmin','admin', 'employee'],
       default: 'superadmin'
     },
-    CreatedDate : {type: Date, default: Date.now},
+    CreatedDate : {type: Date},
     UpdatedDate : Date,
 })
 

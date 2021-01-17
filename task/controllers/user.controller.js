@@ -3,6 +3,7 @@ var mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const userModel = require('../models/user.model');
 
+
 let getUsers = async function (req, res) {
        console.log(req.query);
        UserModel.getManyUsers({ skip: parseInt(req.query.skip), limit: parseInt(req.query.limit) }
@@ -49,7 +50,14 @@ let login = async function (req, res) {
 
 let setOneUser = async function (req, res) {
     if (req.body.Name && req.body.Email && req.body.Password){
-        UserModel.saveOneData(req.body)
+        let data = {
+            'Name' : req.body.name,
+            'Email' : req.body.Email,
+            'Password' : req.body.Password,
+            'Role' : req.body.Role,
+            'CreatedDate' : req.body.CreatedDate
+        }
+        UserModel.saveOneData(data)
     .then((result)=>{
 
       // Generate json web token
@@ -78,32 +86,126 @@ let searches = async function (req, res) {
     const startDate = new Date(req.body.CreatedDate.startdate);
     const endDate = new Date(req.body.CreatedDate.enddate);
     const Role = req.body.Role;
-    console.log(startDate);
-    console.log(endDate);
-    userModel.getUsers(
-        {'$or' : [
-        {
-            'CreatedDate' : {
-                '$gte':new Date(startDate),
-                '$lte': new Date(endDate)
+
+    let condition ;
+    if (req.body.Role.length > 0 && 
+        (!req.body.CreatedDate.startdate) && 
+        (!req.body.CreatedDate.startdate)){
+        condition = 
+            {
+              'Role' : {'$in' : Role}
             }
-        },
-        {
-          'Role' : {'$in' : Role}
+        } else if ((req.body.Role.length == 0) &&
+        (!!req.body.CreatedDate.startdate) && 
+        (!!req.body.CreatedDate.startdate)
+         ) {
+            condition = 
+                {
+                    'CreatedDate' : {
+                        '$gte':startDate,
+                        '$lte': endDate
+                    }
+                }
+        } else {
+            condition = {'$and' : [
+                {
+                    'CreatedDate' : {
+                        '$gte':startDate,
+                        '$lte': endDate
+                    }
+                },
+                {
+                  'Role' : {'$in' : Role}
+                }
+                ]
+                }
         }
-        ]
-        } 
+   
+
+    userModel.getUsers(
+         condition
         ,{'password' : 0})
     .then((users) => {
         console.log(users);
         res.json({'Users' : users})
     })
 }
+
+
+let roleCount = async function (req, res) {
+    console.log(req.body);
+    const startDate = new Date(req.body.CreatedDate.startdate);
+    const endDate = new Date(req.body.CreatedDate.enddate);
+    const Role = req.body.Role;
+
+    let condition ;
+    if (req.body.Role.length > 0 && 
+        (!req.body.CreatedDate.startdate) && 
+        (!req.body.CreatedDate.startdate)){
+        condition = 
+            {
+              'Role' : {'$in' : Role}
+            }
+        } else if ((req.body.Role.length == 0) &&
+        (!!req.body.CreatedDate.startdate) && 
+        (!!req.body.CreatedDate.startdate)
+         ) {
+            condition = 
+                {
+                    'CreatedDate' : {
+                        '$gte':startDate,
+                        '$lte': endDate
+                    }
+                }
+        } else {
+            condition = {'$and' : [
+                {
+                    'CreatedDate' : {
+                        '$gte':startDate,
+                        '$lte': endDate
+                    }
+                },
+                {
+                  'Role' : {'$in' : Role}
+                }
+                ]
+                }
+        }
+    userModel.getUsers(
+         condition
+        ,{'password' : 0})
+    .then((users) => {
+        console.log('Users =>>', users);
+        console.log('calling to service');
+        let employee = 0;
+        let superadmin = 0;
+        let admin = 0;
+       
+        users = JSON.parse(JSON.stringify(users));
+        console.log('Users list are =>', users);
+        users.map((element) => {
+          console.log(element);
+          if(element.Role === 'employee') employee++;
+          else if (element.Role === 'superadmin') superadmin++;
+          else admin++;
+        })
+
+        console.log(employee, superadmin, admin);
+            res.json({'Result' : {
+                'Total employee' : employee,
+                'Total superadmin' : superadmin,
+                'Total admin' : admin
+              }})
+    })
+
+}
+
 module.exports = {
 getUsers: getUsers,
 setOneUser : setOneUser ,
 login : login,
-searches : searches
+searches : searches,
+roleCount : roleCount
 };
 
 
